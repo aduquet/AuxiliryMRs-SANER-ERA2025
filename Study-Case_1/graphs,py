@@ -1,0 +1,96 @@
+import networkx as nx
+
+# 1. Set up the graph
+def create_graph():
+    G = nx.Graph()  # Ensure this is an undirected graph
+    # Add edges with weights
+    G.add_edge('A', 'B', weight=1)
+    G.add_edge('B', 'C', weight=2)
+    G.add_edge('A', 'C', weight=4)
+    G.add_edge('C', 'D', weight=1)
+    G.add_edge('B', 'D', weight=5)
+    G.add_edge('D', 'E', weight=3)
+    G.add_edge('C', 'E', weight=7)
+    return G
+
+# 2. Implement the SUT
+def compute_shortest_path(G, source, target):
+    # def compute_shortest_path_faulty(G, source, target):
+    # Faulty SUT: Ignores certain edges
+    G_faulty = G.copy()
+    G_faulty.remove_edge('C', 'D')  # Removes an edge
+    path = nx.dijkstra_path(G_faulty, source, target, weight='weight')
+    print(f"Computed faulty shortest path: {path}")
+    return path
+    # path = nx.dijkstra_path(G, source, target, weight='weight')
+    # print(f"Computed shortest path: {path}")
+    # return path
+
+# 3. Define the Auxiliary Function
+def calculate_path_distance(G, path):
+    distance = 0
+    for i in range(len(path) - 1):
+        edge_weight = G[path[i]][path[i + 1]]['weight']
+        print(f"Edge ({path[i]}, {path[i + 1]}), Weight: {edge_weight}")
+        distance += edge_weight
+    return distance
+
+# 4. Apply the AMR
+def apply_auxiliary_metamorphic_rule(G, original_path):
+    print(f"Original Path: {original_path}")
+    # Transform the output path to create an alternative path
+    modified_path = original_path.copy()
+    if len(modified_path) > 3:
+        # Swap the middle two nodes
+        modified_path[1], modified_path[2] = modified_path[2], modified_path[1]
+    else:
+        # Add an extra node to the path (if possible)
+        modified_path.insert(-1, 'B')  # Insert node 'B' before the last node
+
+    print(f"Modified Path: {modified_path}")
+
+    # Ensure the modified path is valid
+    if not is_valid_path(G, modified_path):
+        print("Modified path is not valid.")
+        return
+
+    # Apply the auxiliary function to both paths
+    print("\nCalculating distance for the original path:")
+    original_distance = calculate_path_distance(G, original_path)
+    print(f"Total distance for original path: {original_distance}\n")
+
+    print("Calculating distance for the modified path:")
+    modified_distance = calculate_path_distance(G, modified_path)
+    print(f"Total distance for modified path: {modified_distance}\n")
+
+    # Verification
+    if original_distance <= modified_distance:
+        print("AMR Verified: Original path has shorter or equal distance.")
+    else:
+        print("AMR Violation: Modified path has shorter distance than original path.")
+
+def is_valid_path(G, path):
+    # Check if all consecutive edges exist in the graph
+    for i in range(len(path) - 1):
+        node_a = path[i]
+        node_b = path[i + 1]
+        print(f"Checking edge: ({node_a}, {node_b})")
+        if not G.has_edge(node_a, node_b):
+            print(f"Edge ({node_a}, {node_b}) does not exist.")
+            return False
+    return True
+
+# Main function to execute the test
+def main():
+    G = create_graph()
+    source = 'A'
+    target = 'E'
+
+    # Compute the original shortest path
+    original_path = compute_shortest_path(G, source, target)
+
+    # Apply the AMR
+    apply_auxiliary_metamorphic_rule(G, original_path)
+
+if __name__ == "__main__":
+    main()
